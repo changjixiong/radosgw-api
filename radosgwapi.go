@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -59,7 +60,25 @@ func (conn *connection) ListBuckets() {
 }
 
 func (conn *connection) GetBucket(bucketName string) {
-	req, err := http.NewRequest("GET", conn.Host+"/"+bucketName, nil)
+
+	args := url.Values{}
+	args.Add("format", "json")
+
+	body, _, err := conn.Request("GET", "/"+bucketName, args)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("body", strings.Repeat("-", 32))
+	fmt.Println(string(body))
+}
+
+func (conn *connection) Request(method, router string, args url.Values) (body []byte, statusCode int, err error) {
+
+	url := fmt.Sprintf("%s%s?%s", conn.Host, router, args.Encode())
+	req, err := http.NewRequest(method, url, nil)
+	// req, err := http.NewRequest("GET", conn.Host+"/"+bucketName, nil)
 	if err != nil {
 		return
 	}
@@ -81,15 +100,14 @@ func (conn *connection) GetBucket(bucketName string) {
 	if resp.Body != nil {
 		defer resp.Body.Close()
 	}
-	statusCode := resp.StatusCode
-	fmt.Println("statusCode:", statusCode)
-	body, err := ioutil.ReadAll(resp.Body)
+	statusCode = resp.StatusCode
+
+	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return
 	}
 
-	fmt.Println("body", strings.Repeat("-", 32))
-	fmt.Println(string(body))
+	return
 }
 
 func (conn *connection) AddHttpHeader(request *http.Request) {
