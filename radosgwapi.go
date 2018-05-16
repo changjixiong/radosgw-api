@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	awsauth "github.com/go-aws-auth"
+	awsauth "github.com/smartystreets/go-aws-auth"
 )
 
 type connection struct {
