@@ -74,11 +74,26 @@ func (conn *connection) GetBucket(bucketName string) {
 	fmt.Println(string(body))
 }
 
+func (conn *connection) GetUser(uid string) {
+
+	args := url.Values{}
+	args.Add("format", "json")
+	args.Add("uid", uid)
+
+	body, _, err := conn.Request("GET", "/admin/user", args)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("body", strings.Repeat("-", 32))
+	fmt.Println(string(body))
+}
+
 func (conn *connection) Request(method, router string, args url.Values) (body []byte, statusCode int, err error) {
 
 	url := fmt.Sprintf("%s%s?%s", conn.Host, router, args.Encode())
 	req, err := http.NewRequest(method, url, nil)
-	// req, err := http.NewRequest("GET", conn.Host+"/"+bucketName, nil)
 	if err != nil {
 		return
 	}
