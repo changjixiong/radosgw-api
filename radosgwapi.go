@@ -64,6 +64,8 @@ func (conn *connection) GetBucket(bucketName string) {
 		return
 	}
 
+	conn.AddHttpHeader(req)
+
 	awsauth.SignS3(req, awsauth.Credentials{
 		AccessKeyID:     conn.AccessKeyID,
 		SecretAccessKey: conn.SecretAccessKey,
@@ -88,4 +90,8 @@ func (conn *connection) GetBucket(bucketName string) {
 
 	fmt.Println("body", strings.Repeat("-", 32))
 	fmt.Println(string(body))
+}
+
+func (conn *connection) AddHttpHeader(request *http.Request) {
+	request.Header.Add("Accept-Encoding", "identity")
 }
