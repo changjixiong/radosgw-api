@@ -2,6 +2,7 @@ package radosgwapi
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -9,6 +10,12 @@ import (
 
 	awsauth "github.com/smartystreets/go-aws-auth"
 )
+
+type ObjectConfig struct {
+	Bucket       string
+	Key          string
+	ObjectReader io.Reader
+}
 
 type connection struct {
 	Host            string
@@ -27,19 +34,19 @@ func NewConnection(host, accessKeyID, secretAccessKey string) *connection {
 
 func (conn *connection) ListBuckets() (body []byte, statusCode int, err error) {
 	args := url.Values{}
-	body, statusCode, err = conn.Request("GET", "", args)
+	body, statusCode, err = conn.Request("GET", "", args, nil)
 	return
 }
 
 func (conn *connection) DeleteBucket(bucketName string) (body []byte, statusCode int, err error) {
 	args := url.Values{}
-	body, statusCode, err = conn.Request("DELETE", "/"+bucketName, args)
+	body, statusCode, err = conn.Request("DELETE", "/"+bucketName, args, nil)
 	return
 }
 
 func (conn *connection) CreateBucket(bucketName string) (body []byte, statusCode int, err error) {
 	args := url.Values{}
-	body, statusCode, err = conn.Request("PUT", "/"+bucketName, args)
+	body, statusCode, err = conn.Request("PUT", "/"+bucketName, args, nil)
 	return
 }
 
@@ -47,7 +54,7 @@ func (conn *connection) GetBucket(bucketName string) (body []byte, statusCode in
 
 	args := url.Values{}
 
-	body, statusCode, err = conn.Request("GET", "/"+bucketName, args)
+	body, statusCode, err = conn.Request("GET", "/"+bucketName, args, nil)
 
 	return
 }
@@ -57,18 +64,27 @@ func (conn *connection) GetUser(uid string) (body []byte, statusCode int, err er
 	args := url.Values{}
 	args.Add("uid", uid)
 
-	body, statusCode, err = conn.Request("GET", "/admin/user", args)
+	body, statusCode, err = conn.Request("GET", "/admin/user", args, nil)
 
 	return
 }
 
-func (conn *connection) Request(method, router string, args url.Values) (body []byte, statusCode int, err error) {
+func (conn *connection) PutObject(objectCfg *ObjectConfig) (body []byte, statusCode int, err error) {
+
+	args := url.Values{}
+
+	body, statusCode, err = conn.Request("PUT", "/"+objectCfg.Bucket+"/"+objectCfg.Key, args, objectCfg.ObjectReader)
+
+	return
+}
+
+func (conn *connection) Request(method, router string, args url.Values, io io.Reader) (body []byte, statusCode int, err error) {
 
 	url := fmt.Sprintf("%s%s", conn.Host, router)
 	if len(args) > 0 {
 		url += "?" + args.Encode()
 	}
-	req, err := http.NewRequest(method, url, nil)
+	req, err := http.NewRequest(method, url, io)
 	if err != nil {
 		return
 	}
