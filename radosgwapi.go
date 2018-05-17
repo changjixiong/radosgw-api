@@ -26,7 +26,7 @@ func NewConnection(host, accessKeyID, secretAccessKey string) *connection {
 	}
 }
 
-func (conn *connection) ListBuckets() {
+func (conn *connection) ListAllMyBuckets() (body []byte, statusCode int, err error) {
 
 	req, err := http.NewRequest("GET", conn.Host, nil)
 	if err != nil {
@@ -48,15 +48,10 @@ func (conn *connection) ListBuckets() {
 	if resp.Body != nil {
 		defer resp.Body.Close()
 	}
-	statusCode := resp.StatusCode
-	fmt.Println("statusCode:", statusCode)
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
+	statusCode = resp.StatusCode
+	body, err = ioutil.ReadAll(resp.Body)
 
-	fmt.Println("body", strings.Repeat("-", 32))
-	fmt.Println(string(body))
+	return
 }
 
 func (conn *connection) GetBucket(bucketName string) {
