@@ -27,30 +27,8 @@ func NewConnection(host, accessKeyID, secretAccessKey string) *connection {
 }
 
 func (conn *connection) ListAllMyBuckets() (body []byte, statusCode int, err error) {
-
-	req, err := http.NewRequest("GET", conn.Host, nil)
-	if err != nil {
-		return
-	}
-
-	awsauth.SignS3(req, awsauth.Credentials{
-		AccessKeyID:     conn.AccessKeyID,
-		SecretAccessKey: conn.SecretAccessKey,
-		Expiration:      time.Now().Add(1 * time.Minute)},
-	)
-
-	client := http.Client{}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return
-	}
-	if resp.Body != nil {
-		defer resp.Body.Close()
-	}
-	statusCode = resp.StatusCode
-	body, err = ioutil.ReadAll(resp.Body)
-
+	args := url.Values{}
+	body, statusCode, err = conn.Request("GET", "", args)
 	return
 }
 
@@ -87,7 +65,10 @@ func (conn *connection) GetUser(uid string) {
 
 func (conn *connection) Request(method, router string, args url.Values) (body []byte, statusCode int, err error) {
 
-	url := fmt.Sprintf("%s%s?%s", conn.Host, router, args.Encode())
+	url := fmt.Sprintf("%s%s", conn.Host, router)
+	if len(args) > 0 {
+		url += "?" + args.Encode()
+	}
 	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		return
