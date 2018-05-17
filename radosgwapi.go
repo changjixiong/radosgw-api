@@ -44,19 +44,14 @@ func (conn *connection) CreateBucket(bucketName string) (body []byte, statusCode
 	return
 }
 
-func (conn *connection) GetBucket(bucketName string) {
+func (conn *connection) GetBucket(bucketName string) (body []byte, statusCode int, err error) {
 
 	args := url.Values{}
 	args.Add("format", "json")
 
-	body, _, err := conn.Request("GET", "/"+bucketName, args)
+	body, statusCode, err = conn.Request("GET", "/"+bucketName, args)
 
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	fmt.Println("body", strings.Repeat("-", 32))
-	fmt.Println(string(body))
+	return
 }
 
 func (conn *connection) GetUser(uid string) {
