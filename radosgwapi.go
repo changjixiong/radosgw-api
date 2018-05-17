@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	awsauth "github.com/smartystreets/go-aws-auth"
@@ -47,27 +46,20 @@ func (conn *connection) CreateBucket(bucketName string) (body []byte, statusCode
 func (conn *connection) GetBucket(bucketName string) (body []byte, statusCode int, err error) {
 
 	args := url.Values{}
-	args.Add("format", "json")
 
 	body, statusCode, err = conn.Request("GET", "/"+bucketName, args)
 
 	return
 }
 
-func (conn *connection) GetUser(uid string) {
+func (conn *connection) GetUser(uid string) (body []byte, statusCode int, err error) {
 
 	args := url.Values{}
-	args.Add("format", "json")
 	args.Add("uid", uid)
 
-	body, _, err := conn.Request("GET", "/admin/user", args)
+	body, statusCode, err = conn.Request("GET", "/admin/user", args)
 
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	fmt.Println("body", strings.Repeat("-", 32))
-	fmt.Println(string(body))
+	return
 }
 
 func (conn *connection) Request(method, router string, args url.Values) (body []byte, statusCode int, err error) {
