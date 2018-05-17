@@ -32,6 +32,12 @@ func (conn *connection) ListAllMyBuckets() (body []byte, statusCode int, err err
 	return
 }
 
+func (conn *connection) DeleteBucket(bucketName string) (body []byte, statusCode int, err error) {
+	args := url.Values{}
+	body, statusCode, err = conn.Request("DELETE", "/"+bucketName, args)
+	return
+}
+
 func (conn *connection) GetBucket(bucketName string) {
 
 	args := url.Values{}
