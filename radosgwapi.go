@@ -26,7 +26,7 @@ func NewConnection(host, accessKeyID, secretAccessKey string) *connection {
 	}
 }
 
-func (conn *connection) ListAllMyBuckets() (body []byte, statusCode int, err error) {
+func (conn *connection) ListBuckets() (body []byte, statusCode int, err error) {
 	args := url.Values{}
 	body, statusCode, err = conn.Request("GET", "", args)
 	return
@@ -35,6 +35,12 @@ func (conn *connection) ListAllMyBuckets() (body []byte, statusCode int, err err
 func (conn *connection) DeleteBucket(bucketName string) (body []byte, statusCode int, err error) {
 	args := url.Values{}
 	body, statusCode, err = conn.Request("DELETE", "/"+bucketName, args)
+	return
+}
+
+func (conn *connection) CreateBucket(bucketName string) (body []byte, statusCode int, err error) {
+	args := url.Values{}
+	body, statusCode, err = conn.Request("PUT", "/"+bucketName, args)
 	return
 }
 
