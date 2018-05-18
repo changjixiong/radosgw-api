@@ -32,9 +32,9 @@ func NewConnection(host, accessKeyID, secretAccessKey string) *connection {
 	}
 }
 
-func (conn *connection) ListBuckets() (body []byte, statusCode int, err error) {
+func (conn *connection) ListBuckets(bucketName string) (body []byte, statusCode int, err error) {
 	args := url.Values{}
-	body, statusCode, err = conn.Request("GET", "", args, nil)
+	body, statusCode, err = conn.Request("GET", "/"+bucketName, args, nil)
 	return
 }
 
