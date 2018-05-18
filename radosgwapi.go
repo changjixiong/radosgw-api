@@ -21,14 +21,24 @@ type connection struct {
 	Host            string
 	AccessKeyID     string
 	SecretAccessKey string
+	customHeader    http.Header
 }
 
-func NewConnection(host, accessKeyID, secretAccessKey string) *connection {
+func (conn *connection) AddCustomHeader(key, value string) {
+	conn.customHeader.Add(key, value)
+}
+
+func (conn *connection) DeleteCustomHeader(key string) {
+	conn.customHeader.Del(key)
+}
+
+func NewConnection(host, accessKeyID, secretAccessKey string, customHeader http.Header) *connection {
 
 	return &connection{
 		Host:            host,
 		AccessKeyID:     accessKeyID,
 		SecretAccessKey: secretAccessKey,
+		customHeader:    customHeader,
 	}
 }
 
@@ -70,7 +80,6 @@ func (conn *connection) GetUser(uid string) (body []byte, statusCode int, err er
 }
 
 func (conn *connection) PutObject(objectCfg *ObjectConfig) (body []byte, statusCode int, err error) {
-
 	args := url.Values{}
 
 	body, statusCode, err = conn.Request("PUT", "/"+objectCfg.Bucket+"/"+objectCfg.Key, args, objectCfg.ObjectReader)
@@ -89,7 +98,7 @@ func (conn *connection) Request(method, router string, args url.Values, io io.Re
 		return
 	}
 
-	conn.AddHttpHeader(req)
+	conn.addHttpHeader(req)
 
 	awsauth.SignS3(req, awsauth.Credentials{
 		AccessKeyID:     conn.AccessKeyID,
@@ -116,6 +125,11 @@ func (conn *connection) Request(method, router string, args url.Values, io io.Re
 	return
 }
 
-func (conn *connection) AddHttpHeader(request *http.Request) {
-	request.Header.Add("Accept-Encoding", "identity")
+func (conn *connection) addHttpHeader(request *http.Request) {
+
+	for key, values := range conn.customHeader {
+		for _, v := range values {
+			request.Header.Add(key, v)
+		}
+	}
 }
