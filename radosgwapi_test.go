@@ -3,6 +3,7 @@ package radosgwapi_test
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -110,6 +111,7 @@ func TestFunction(t *testing.T) {
 			json.Unmarshal(objectConfigInCaseStr, objectConfigInCase)
 
 			var objectBody []byte
+			var objectReader io.Reader
 			if "" != objectConfigInCase.ObjectPath {
 				file, err := os.Open(objectConfigInCase.ObjectPath)
 				if nil != err {
@@ -122,12 +124,14 @@ func TestFunction(t *testing.T) {
 					t.Error(err)
 					continue
 				}
+
+				objectReader = strings.NewReader(string(objectBody))
 			}
 
 			objectConfig := &radosgwapi.ObjectConfig{
 				Bucket:       objectConfigInCase.Bucket,
 				Key:          objectConfigInCase.Key,
-				ObjectReader: strings.NewReader(string(objectBody)),
+				ObjectReader: objectReader,
 			}
 			addCustomHeader(conn, tc.AddCustomHeader)
 			result = reflectinvoker.InvokeByReflectArgs(tc.FuncName,

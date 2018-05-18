@@ -1,4 +1,5 @@
 [
     {"func_name":"ListBuckets","para_type":"string","para":"p"},
+    {"func_name":"CreateBucket","para_type":"string","para":"newBucket","add_customHeader":{"Custom-Header":"CustomHeaderV"},"delete_customHeader":{"Custom-Header":""}},
     {"func_name":"PutObject","para_type":"ObjectConfig","para":{"Bucket":"bname","Key":"kname","ObjectPath":"opath.txt"},"add_customHeader":{"Custom-Header":"CustomHeaderV"},"delete_customHeader":{"Custom-Header":""}}
 ]
