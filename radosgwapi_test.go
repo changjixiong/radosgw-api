@@ -22,9 +22,11 @@ type ObjectConfigInCase struct {
 }
 
 type RadosgwapiTestCase struct {
-	FuncName string      `json:"func_name"`
-	ParaType string      `json:"para_type"`
-	Para     interface{} `json:"para"`
+	FuncName           string            `json:"func_name"`
+	ParaType           string            `json:"para_type"`
+	Para               interface{}       `json:"para"`
+	AddCustomHeader    map[string]string `json:"add_customHeader"`
+	DeleteCustomHeader map[string]string `json:"delete_customHeader"`
 }
 
 var conn *radosgwapi.Connection
@@ -69,6 +71,28 @@ func init() {
 
 }
 
+func addCustomHeader(conn *radosgwapi.Connection, customHeader map[string]string) {
+
+	if len(customHeader) <= 0 {
+		return
+	}
+
+	for k, v := range customHeader {
+		conn.AddCustomHeader(k, v)
+	}
+}
+
+func clearCustomHeader(conn *radosgwapi.Connection, customHeader map[string]string) {
+
+	if len(customHeader) <= 0 {
+		return
+	}
+
+	for k, _ := range customHeader {
+		conn.DeleteCustomHeader(k)
+	}
+}
+
 func TestFunction(t *testing.T) {
 
 	var result []reflect.Value
@@ -76,8 +100,10 @@ func TestFunction(t *testing.T) {
 
 		switch tc.ParaType {
 		case "string":
+			addCustomHeader(conn, tc.AddCustomHeader)
 			result = reflectinvoker.InvokeByReflectArgs(tc.FuncName,
 				[]reflect.Value{reflect.ValueOf(tc.Para)})
+			clearCustomHeader(conn, tc.AddCustomHeader)
 		case "ObjectConfig":
 			objectConfigInCaseStr, _ := json.Marshal(tc.Para)
 			objectConfigInCase := &ObjectConfigInCase{}
@@ -103,8 +129,10 @@ func TestFunction(t *testing.T) {
 				Key:          objectConfigInCase.Key,
 				ObjectReader: strings.NewReader(string(objectBody)),
 			}
+			addCustomHeader(conn, tc.AddCustomHeader)
 			result = reflectinvoker.InvokeByReflectArgs(tc.FuncName,
 				[]reflect.Value{reflect.ValueOf(objectConfig)})
+			clearCustomHeader(conn, tc.AddCustomHeader)
 		default:
 			t.Error("unsupported para type:", tc.ParaType)
 			continue
