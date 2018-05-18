@@ -17,24 +17,24 @@ type ObjectConfig struct {
 	ObjectReader io.Reader
 }
 
-type connection struct {
+type Connection struct {
 	Host            string
 	AccessKeyID     string
 	SecretAccessKey string
 	customHeader    http.Header
 }
 
-func (conn *connection) AddCustomHeader(key, value string) {
+func (conn *Connection) AddCustomHeader(key, value string) {
 	conn.customHeader.Add(key, value)
 }
 
-func (conn *connection) DeleteCustomHeader(key string) {
+func (conn *Connection) DeleteCustomHeader(key string) {
 	conn.customHeader.Del(key)
 }
 
-func NewConnection(host, accessKeyID, secretAccessKey string, customHeader http.Header) *connection {
+func NewConnection(host, accessKeyID, secretAccessKey string, customHeader http.Header) *Connection {
 
-	return &connection{
+	return &Connection{
 		Host:            host,
 		AccessKeyID:     accessKeyID,
 		SecretAccessKey: secretAccessKey,
@@ -42,25 +42,25 @@ func NewConnection(host, accessKeyID, secretAccessKey string, customHeader http.
 	}
 }
 
-func (conn *connection) ListBuckets(bucketName string) (body []byte, statusCode int, err error) {
+func (conn *Connection) ListBuckets(bucketName string) (body []byte, statusCode int, err error) {
 	args := url.Values{}
 	body, statusCode, err = conn.Request("GET", "/"+bucketName, args, nil)
 	return
 }
 
-func (conn *connection) DeleteBucket(bucketName string) (body []byte, statusCode int, err error) {
+func (conn *Connection) DeleteBucket(bucketName string) (body []byte, statusCode int, err error) {
 	args := url.Values{}
 	body, statusCode, err = conn.Request("DELETE", "/"+bucketName, args, nil)
 	return
 }
 
-func (conn *connection) CreateBucket(bucketName string) (body []byte, statusCode int, err error) {
+func (conn *Connection) CreateBucket(bucketName string) (body []byte, statusCode int, err error) {
 	args := url.Values{}
 	body, statusCode, err = conn.Request("PUT", "/"+bucketName, args, nil)
 	return
 }
 
-func (conn *connection) GetBucket(bucketName string) (body []byte, statusCode int, err error) {
+func (conn *Connection) GetBucket(bucketName string) (body []byte, statusCode int, err error) {
 
 	args := url.Values{}
 
@@ -69,7 +69,7 @@ func (conn *connection) GetBucket(bucketName string) (body []byte, statusCode in
 	return
 }
 
-func (conn *connection) GetUser(uid string) (body []byte, statusCode int, err error) {
+func (conn *Connection) GetUser(uid string) (body []byte, statusCode int, err error) {
 
 	args := url.Values{}
 	args.Add("uid", uid)
@@ -79,7 +79,7 @@ func (conn *connection) GetUser(uid string) (body []byte, statusCode int, err er
 	return
 }
 
-func (conn *connection) PutObject(objectCfg *ObjectConfig) (body []byte, statusCode int, err error) {
+func (conn *Connection) PutObject(objectCfg *ObjectConfig) (body []byte, statusCode int, err error) {
 	args := url.Values{}
 
 	body, statusCode, err = conn.Request("PUT", "/"+objectCfg.Bucket+"/"+objectCfg.Key, args, objectCfg.ObjectReader)
@@ -87,7 +87,7 @@ func (conn *connection) PutObject(objectCfg *ObjectConfig) (body []byte, statusC
 	return
 }
 
-func (conn *connection) Request(method, router string, args url.Values, io io.Reader) (body []byte, statusCode int, err error) {
+func (conn *Connection) Request(method, router string, args url.Values, io io.Reader) (body []byte, statusCode int, err error) {
 
 	url := fmt.Sprintf("%s%s", conn.Host, router)
 	if len(args) > 0 {
@@ -125,7 +125,7 @@ func (conn *connection) Request(method, router string, args url.Values, io io.Re
 	return
 }
 
-func (conn *connection) addHttpHeader(request *http.Request) {
+func (conn *Connection) addHttpHeader(request *http.Request) {
 
 	for key, values := range conn.customHeader {
 		for _, v := range values {
