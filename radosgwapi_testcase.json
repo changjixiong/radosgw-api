@@ -1,0 +1,4 @@
+[
+    {"func_name":"ListBuckets","para_type":"string","para":"p"},
+    {"func_name":"PutObject","para_type":"ObjectConfig","para":{"Bucket":"bname","Key":"kname","ObjectPath":"opath.txt"}}
+]
