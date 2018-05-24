@@ -1,6 +1,7 @@
 package radosgwapi
 
 import (
+	"encoding/xml"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,6 +16,7 @@ type ObjectConfig struct {
 	Bucket       string
 	Key          string
 	ObjectReader io.Reader
+	PicSize      int
 }
 
 type Connection struct {
@@ -83,6 +85,26 @@ func (conn *Connection) PutObject(objectCfg *ObjectConfig) (body []byte, statusC
 	args := url.Values{}
 
 	body, statusCode, err = conn.Request("PUT", "/"+objectCfg.Bucket+"/"+objectCfg.Key, args, objectCfg.ObjectReader)
+
+	return
+}
+
+func (conn *Connection) PutObjectByPic(objectCfg *ObjectConfig) (body []byte, statusCode int, err error) {
+	args := url.Values{}
+	args.Add("format", "json")
+	body, statusCode, err = conn.Request("POST", "/"+objectCfg.Bucket+"/"+objectCfg.Key+"?uploads", args, objectCfg.ObjectReader)
+	// body, statusCode, err = conn.Request("PUT", "/"+objectCfg.Bucket+"/"+objectCfg.Key, args, objectCfg.ObjectReader)
+
+	if nil != err {
+		return
+	}
+
+	initiateMultipartUploadResult := &InitiateMultipartUploadResult{}
+	err = xml.Unmarshal(body, initiateMultipartUploadResult)
+
+	if nil != err {
+		return
+	}
 
 	return
 }
