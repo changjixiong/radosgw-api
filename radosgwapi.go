@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	awsauth "github.com/smartystreets/go-aws-auth"
@@ -46,19 +47,19 @@ func NewConnection(host, accessKeyID, secretAccessKey string, customHeader http.
 
 func (conn *Connection) ListBuckets(bucketName string) (body []byte, statusCode int, err error) {
 	args := url.Values{}
-	body, statusCode, err = conn.Request("GET", "/"+bucketName, args, nil)
+	statusCode, _, body, err = conn.Request("GET", "/"+bucketName, args, nil)
 	return
 }
 
 func (conn *Connection) DeleteBucket(bucketName string) (body []byte, statusCode int, err error) {
 	args := url.Values{}
-	body, statusCode, err = conn.Request("DELETE", "/"+bucketName, args, nil)
+	statusCode, _, body, err = conn.Request("DELETE", "/"+bucketName, args, nil)
 	return
 }
 
 func (conn *Connection) CreateBucket(bucketName string) (body []byte, statusCode int, err error) {
 	args := url.Values{}
-	body, statusCode, err = conn.Request("PUT", "/"+bucketName, args, nil)
+	statusCode, _, body, err = conn.Request("PUT", "/"+bucketName, args, nil)
 	return
 }
 
@@ -66,7 +67,7 @@ func (conn *Connection) GetBucket(bucketName string) (body []byte, statusCode in
 
 	args := url.Values{}
 
-	body, statusCode, err = conn.Request("GET", "/"+bucketName, args, nil)
+	statusCode, _, body, err = conn.Request("GET", "/"+bucketName, args, nil)
 
 	return
 }
@@ -76,7 +77,7 @@ func (conn *Connection) GetUser(uid string) (body []byte, statusCode int, err er
 	args := url.Values{}
 	args.Add("uid", uid)
 
-	body, statusCode, err = conn.Request("GET", "/admin/user", args, nil)
+	statusCode, _, body, err = conn.Request("GET", "/admin/user", args, nil)
 
 	return
 }
@@ -84,32 +85,82 @@ func (conn *Connection) GetUser(uid string) (body []byte, statusCode int, err er
 func (conn *Connection) PutObject(objectCfg *ObjectConfig) (body []byte, statusCode int, err error) {
 	args := url.Values{}
 
-	body, statusCode, err = conn.Request("PUT", "/"+objectCfg.Bucket+"/"+objectCfg.Key, args, objectCfg.ObjectReader)
+	statusCode, _, body, err = conn.Request("PUT", "/"+objectCfg.Bucket+"/"+objectCfg.Key, args, objectCfg.ObjectReader)
 
 	return
 }
 
 func (conn *Connection) PutObjectByPic(objectCfg *ObjectConfig) (body []byte, statusCode int, err error) {
 	args := url.Values{}
-	args.Add("format", "json")
-	body, statusCode, err = conn.Request("POST", "/"+objectCfg.Bucket+"/"+objectCfg.Key+"?uploads", args, objectCfg.ObjectReader)
-	// body, statusCode, err = conn.Request("PUT", "/"+objectCfg.Bucket+"/"+objectCfg.Key, args, objectCfg.ObjectReader)
+
+	statusCode, _, body, err = conn.Request("POST", "/"+objectCfg.Bucket+"/"+objectCfg.Key+"?uploads", args, nil)
 
 	if nil != err {
 		return
 	}
+
+	// fmt.Println("statusCode:", statusCode, "body", body)
 
 	initiateMultipartUploadResult := &InitiateMultipartUploadResult{}
 	err = xml.Unmarshal(body, initiateMultipartUploadResult)
 
 	if nil != err {
+		fmt.Println(err)
 		return
 	}
+
+	responseHeader := http.Header{}
+	Etags := []string{}
+
+	//TODO: add content
+	string1 := ""
+	args.Add("partNumber", "1")
+	args.Add("UploadId", initiateMultipartUploadResult.UploadId)
+	statusCode, responseHeader, body, err = conn.Request("PUT", "/"+objectCfg.Bucket+"/"+objectCfg.Key, args, strings.NewReader(string1))
+
+	if nil != err {
+		fmt.Println(err)
+		return
+	}
+
+	if nil != responseHeader["Etag"] {
+		Etags = append(Etags, responseHeader["Etag"]...)
+	}
+
+	args.Del("partNumber")
+	args.Del("UploadId")
+	fmt.Println("statusCode1:", statusCode, "body1:", body)
+
+	//TODO: add content
+	string2 := ""
+	args.Add("partNumber", "2")
+	args.Add("UploadId", initiateMultipartUploadResult.UploadId)
+	statusCode, responseHeader, body, err = conn.Request("PUT", "/"+objectCfg.Bucket+"/"+objectCfg.Key, args, strings.NewReader(string2))
+
+	if nil != err {
+		fmt.Println(err)
+		return
+	}
+
+	if nil != responseHeader["Etag"] {
+		Etags = append(Etags, responseHeader["Etag"]...)
+	}
+	args.Del("partNumber")
+
+	string3 := ``
+
+	for n, etag := range Etags {
+		string3 += fmt.Sprintf("<Part><PartNumber>%d</PartNumber><ETag>%s</ETag></Part>", n+1, etag)
+	}
+
+	string3 = fmt.Sprintf("<CompleteMultipartUpload>%s</CompleteMultipartUpload>", string3)
+
+	statusCode, _, body, err = conn.Request("POST", "/"+objectCfg.Bucket+"/"+objectCfg.Key, args, strings.NewReader(string3))
 
 	return
 }
 
-func (conn *Connection) Request(method, router string, args url.Values, io io.Reader) (body []byte, statusCode int, err error) {
+func (conn *Connection) Request(method, router string, args url.Values, io io.Reader) (statusCode int, header http.Header, body []byte, err error) {
 
 	url := fmt.Sprintf("%s%s", conn.Host, router)
 	if len(args) > 0 {
@@ -138,7 +189,7 @@ func (conn *Connection) Request(method, router string, args url.Values, io io.Re
 		defer resp.Body.Close()
 	}
 	statusCode = resp.StatusCode
-
+	header = resp.Header
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return
