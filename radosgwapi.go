@@ -119,7 +119,7 @@ func (conn *Connection) PutObjectByPic(objectCfg *ObjectConfig) (body []byte, st
 
 		if nil == err || io.ErrUnexpectedEOF == err {
 			args.Add("partNumber", strconv.Itoa(partNumber))
-			args.Add("UploadId", initiateMultipartUploadResult.UploadId)
+			args.Add("uploadId", initiateMultipartUploadResult.UploadId)
 			statusCode, responseHeader, _, err = conn.Request("PUT", "/"+objectCfg.Bucket+"/"+objectCfg.Key, args, strings.NewReader(string(byte5m[0:byteReadLen])))
 
 			if nil != err {
@@ -132,7 +132,7 @@ func (conn *Connection) PutObjectByPic(objectCfg *ObjectConfig) (body []byte, st
 			}
 
 			args.Del("partNumber")
-			args.Del("UploadId")
+			args.Del("uploadId")
 
 		} else {
 			if io.EOF == err {
@@ -145,7 +145,7 @@ func (conn *Connection) PutObjectByPic(objectCfg *ObjectConfig) (body []byte, st
 
 	}
 
-	args.Add("UploadId", initiateMultipartUploadResult.UploadId)
+	args.Add("uploadId", initiateMultipartUploadResult.UploadId)
 
 	postStr := ``
 
