@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -99,8 +100,6 @@ func (conn *Connection) PutObjectByPic(objectCfg *ObjectConfig) (body []byte, st
 		return
 	}
 
-	// fmt.Println("statusCode:", statusCode, "body", body)
-
 	initiateMultipartUploadResult := &InitiateMultipartUploadResult{}
 	err = xml.Unmarshal(body, initiateMultipartUploadResult)
 
@@ -112,50 +111,54 @@ func (conn *Connection) PutObjectByPic(objectCfg *ObjectConfig) (body []byte, st
 	responseHeader := http.Header{}
 	Etags := []string{}
 
-	//TODO: add content
-	string1 := ""
-	args.Add("partNumber", "1")
-	args.Add("UploadId", initiateMultipartUploadResult.UploadId)
-	statusCode, responseHeader, body, err = conn.Request("PUT", "/"+objectCfg.Bucket+"/"+objectCfg.Key, args, strings.NewReader(string1))
+	byte5mLen := 5 << 20
+	byteReadLen := 0
+	for partNumber := 1; ; partNumber++ {
+		byte5m := make([]byte, byte5mLen)
+		byteReadLen, err = io.ReadFull(objectCfg.ObjectReader, byte5m)
 
-	if nil != err {
-		fmt.Println(err)
-		return
-	}
+		if nil == err || io.ErrUnexpectedEOF == err {
+			args.Add("partNumber", strconv.Itoa(partNumber))
+			args.Add("UploadId", initiateMultipartUploadResult.UploadId)
+			statusCode, responseHeader, _, err = conn.Request("PUT", "/"+objectCfg.Bucket+"/"+objectCfg.Key, args, strings.NewReader(string(byte5m[0:byteReadLen])))
 
-	if nil != responseHeader["Etag"] {
-		Etags = append(Etags, responseHeader["Etag"]...)
+			if nil != err {
+				fmt.Println(err)
+				return
+			}
+
+			if nil != responseHeader["Etag"] {
+				Etags = append(Etags, responseHeader["Etag"]...)
+			}
+
+			args.Del("partNumber")
+			args.Del("UploadId")
+
+		} else {
+			if io.EOF == err {
+				break
+			} else {
+				fmt.Println(err)
+				return
+			}
+		}
+
 	}
 
 	args.Del("partNumber")
-	args.Del("UploadId")
-	fmt.Println("statusCode1:", statusCode, "body1:", body)
 
-	//TODO: add content
-	string2 := ""
-	args.Add("partNumber", "2")
-	args.Add("UploadId", initiateMultipartUploadResult.UploadId)
-	statusCode, responseHeader, body, err = conn.Request("PUT", "/"+objectCfg.Bucket+"/"+objectCfg.Key, args, strings.NewReader(string2))
-
-	if nil != err {
-		fmt.Println(err)
-		return
-	}
-
-	if nil != responseHeader["Etag"] {
-		Etags = append(Etags, responseHeader["Etag"]...)
-	}
-	args.Del("partNumber")
-
-	string3 := ``
+	postStr := ``
 
 	for n, etag := range Etags {
-		string3 += fmt.Sprintf("<Part><PartNumber>%d</PartNumber><ETag>%s</ETag></Part>", n+1, etag)
+		if len(etag) > 2 {
+			postStr += fmt.Sprintf("<Part><PartNumber>%d</PartNumber><ETag>%s</ETag></Part>", n+1, etag[1:len(etag)-1])
+		}
+
 	}
 
-	string3 = fmt.Sprintf("<CompleteMultipartUpload>%s</CompleteMultipartUpload>", string3)
+	postStr = fmt.Sprintf("<CompleteMultipartUpload>%s</CompleteMultipartUpload>", postStr)
 
-	statusCode, _, body, err = conn.Request("POST", "/"+objectCfg.Bucket+"/"+objectCfg.Key, args, strings.NewReader(string3))
+	statusCode, _, body, err = conn.Request("POST", "/"+objectCfg.Bucket+"/"+objectCfg.Key, args, strings.NewReader(postStr))
 
 	return
 }
