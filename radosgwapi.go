@@ -145,7 +145,7 @@ func (conn *Connection) PutObjectByPic(objectCfg *ObjectConfig) (body []byte, st
 
 	}
 
-	args.Del("partNumber")
+	args.Add("UploadId", initiateMultipartUploadResult.UploadId)
 
 	postStr := ``
 
